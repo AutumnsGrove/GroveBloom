@@ -1,0 +1,31 @@
+{
+  "name": "grove-bloom",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Personal serverless remote coding agent infrastructure",
+  "scripts": {
+    "dev": "pnpm --parallel --stream dev",
+    "build": "pnpm --recursive build",
+    "test": "pnpm --recursive test",
+    "lint": "pnpm --recursive lint",
+    "format": "pnpm --recursive format",
+    "dashboard:dev": "pnpm --filter dashboard dev",
+    "worker:dev": "pnpm --filter worker dev",
+    "worker:deploy": "pnpm --filter worker deploy"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.14.4",
+  "keywords": [
+    "cloudflare",
+    "hetzner",
+    "coding-agent",
+    "kilo-code",
+    "serverless"
+  ],
+  "author": "",
+  "license": "MIT"
+}

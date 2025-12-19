@@ -1,0 +1,45 @@
+name = "bloom-control"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Cloudflare R2 Bindings
+[[r2_buckets]]
+binding = "BLOOM_REPOS"
+bucket_name = "bloom-repos"
+
+[[r2_buckets]]
+binding = "BLOOM_STATE"
+bucket_name = "bloom-state"
+
+# Cloudflare D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "bloom-db"
+database_id = "" # Fill in after creating D1 database
+
+# Environment Variables (set with wrangler secret put)
+# HETZNER_API_TOKEN
+# CLOUDFLARE_API_TOKEN
+# CLOUDFLARE_ZONE_ID
+# CLOUDFLARE_ACCOUNT_ID
+# R2_ACCESS_KEY
+# R2_SECRET_KEY
+# OPENROUTER_API_KEY
+# WEBHOOK_SECRET
+# HEARTWOOD_CLIENT_ID
+# HEARTWOOD_CLIENT_SECRET
+
+[vars]
+WORKER_ENV = "production"
+DEFAULT_REGION = "eu"
+DEFAULT_IDLE_TIMEOUT = "7200"
+
+# Route configuration
+routes = [
+  { pattern = "bloom.grove.place/api/*", zone_name = "grove.place" }
+]
+
+# Scheduled tasks (future enhancement)
+# [triggers]
+# crons = ["0 */6 * * *"] # Cleanup old snapshots every 6 hours

@@ -1,0 +1,260 @@
+#cloud-config
+# Grove Bloom VPS Setup Script
+# Used by Hetzner Cloud to provision a new Bloom instance
+
+package_update: true
+package_upgrade: false
+
+packages:
+  - git
+  - tmux
+  - jq
+  - curl
+  - unzip
+
+write_files:
+  # Bloom daemon script
+  - path: /opt/bloom/daemon.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      # Bloom Daemon - monitors activity and handles shutdown triggers
+
+      IDLE_TIMEOUT=${IDLE_TIMEOUT:-7200}  # 2 hours default
+      WEBHOOK_URL="${WEBHOOK_URL}"
+      WEBHOOK_SECRET="${WEBHOOK_SECRET}"
+
+      last_activity=$(date +%s)
+
+      check_terminal_activity() {
+        # Check if there's been recent terminal input
+        if [ -f /tmp/bloom-last-activity ]; then
+          last_activity=$(cat /tmp/bloom-last-activity)
+        fi
+      }
+
+      send_heartbeat() {
+        local idle_seconds=$(($(date +%s) - last_activity))
+        curl -s -X POST "${WEBHOOK_URL}/webhook/heartbeat" \
+          -H "Authorization: Bearer ${WEBHOOK_SECRET}" \
+          -H "Content-Type: application/json" \
+          -d "{
+            \"state\": \"running\",
+            \"idleSeconds\": ${idle_seconds},
+            \"timestamp\": \"$(date -Iseconds)\"
+          }"
+      }
+
+      trigger_shutdown() {
+        local reason=$1
+        echo "$(date): Triggering shutdown - reason: ${reason}"
+
+        # Notify worker
+        curl -s -X POST "${WEBHOOK_URL}/webhook/${reason}" \
+          -H "Authorization: Bearer ${WEBHOOK_SECRET}" \
+          -H "Content-Type: application/json" \
+          -d "{\"timestamp\": \"$(date -Iseconds)\"}"
+      }
+
+      # Main loop
+      while true; do
+        check_terminal_activity
+        idle_seconds=$(($(date +%s) - last_activity))
+
+        # Send heartbeat every 30 seconds
+        send_heartbeat
+
+        # Check idle timeout
+        if [ "$idle_seconds" -ge "$IDLE_TIMEOUT" ]; then
+          trigger_shutdown "idle-timeout"
+          exit 0
+        fi
+
+        sleep 30
+      done
+
+  # Sync script
+  - path: /opt/bloom/sync-to-r2.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      # Sync workspace to R2
+
+      echo "$(date): Starting R2 sync..."
+
+      cd /workspace
+
+      # Compress and upload each project's node_modules
+      for dir in */; do
+        if [ -d "${dir}node_modules" ]; then
+          echo "Compressing ${dir}node_modules..."
+          tar -czf "/tmp/${dir%/}-node_modules.tar.gz" -C "$dir" node_modules
+          rclone copy "/tmp/${dir%/}-node_modules.tar.gz" "r2:bloom-repos/${dir}"
+        fi
+      done
+
+      # Sync Kilo context
+      if [ -d ~/.kilocode ]; then
+        rclone sync ~/.kilocode r2:bloom-state/kilo/
+      fi
+
+      # Create workspace snapshot
+      tar -czf /tmp/workspace-snapshot.tar.gz \
+        --exclude='node_modules' \
+        --exclude='.git/objects' \
+        -C /workspace .
+
+      rclone copy /tmp/workspace-snapshot.tar.gz r2:bloom-state/current/
+
+      echo "$(date): R2 sync complete"
+
+  # Rclone config for R2
+  - path: /root/.config/rclone/rclone.conf
+    content: |
+      [r2]
+      type = s3
+      provider = Cloudflare
+      access_key_id = ${R2_ACCESS_KEY}
+      secret_access_key = ${R2_SECRET_KEY}
+      endpoint = https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com
+      acl = private
+
+  # Kilo Code config
+  - path: /root/.kilocode/config.json
+    content: |
+      {
+        "providers": {
+          "openrouter": {
+            "apiKey": "${OPENROUTER_API_KEY}",
+            "defaultModel": "deepseek/deepseek-chat"
+          }
+        },
+        "autoApproval": {
+          "enabled": true,
+          "read": { "enabled": true, "outside": true },
+          "write": { "enabled": true, "outside": false },
+          "execute": {
+            "enabled": true,
+            "allowed": ["npm", "pnpm", "git", "node", "npx", "wrangler", "uv"],
+            "denied": ["rm -rf /", "sudo rm", "shutdown"]
+          }
+        }
+      }
+
+  # ttyd activity wrapper
+  - path: /opt/bloom/ttyd-wrapper.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      # Wrapper that updates activity timestamp on input
+      date +%s > /tmp/bloom-last-activity
+      exec "$@"
+
+  # Systemd service for ttyd
+  - path: /etc/systemd/system/ttyd.service
+    content: |
+      [Unit]
+      Description=ttyd Web Terminal
+      After=network.target
+
+      [Service]
+      Type=simple
+      ExecStart=/usr/local/bin/ttyd -p 7681 -W -t fontSize=14 -t theme={"background":"#1a1b26"} /bin/bash -c "cd /workspace && exec bash"
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+
+  # Systemd service for Bloom daemon
+  - path: /etc/systemd/system/bloom-daemon.service
+    content: |
+      [Unit]
+      Description=Bloom Daemon
+      After=network.target ttyd.service
+
+      [Service]
+      Type=simple
+      EnvironmentFile=/etc/bloom/env
+      ExecStart=/opt/bloom/daemon.sh
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+
+runcmd:
+  # Install Node.js 22
+  - curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+  - apt-get install -y nodejs
+
+  # Install pnpm
+  - npm install -g pnpm
+
+  # Install Kilo Code CLI
+  - npm install -g @kilocode/cli
+
+  # Install rclone
+  - curl https://rclone.org/install.sh | bash
+
+  # Install ttyd
+  - |
+    TTYD_VERSION="1.7.7"
+    curl -L "https://github.com/tsl0922/ttyd/releases/download/${TTYD_VERSION}/ttyd.x86_64" -o /usr/local/bin/ttyd
+    chmod +x /usr/local/bin/ttyd
+
+  # Create workspace directory
+  - mkdir -p /workspace
+  - mkdir -p /etc/bloom
+  - mkdir -p /opt/bloom
+
+  # Write environment file
+  - |
+    cat > /etc/bloom/env << 'EOF'
+    WEBHOOK_URL=${WEBHOOK_URL}
+    WEBHOOK_SECRET=${WEBHOOK_SECRET}
+    IDLE_TIMEOUT=${IDLE_TIMEOUT}
+    EOF
+
+  # Sync repos from R2
+  - rclone sync r2:bloom-repos/ /workspace/
+
+  # Extract node_modules for each project
+  - |
+    cd /workspace
+    for tarfile in */*-node_modules.tar.gz; do
+      if [ -f "$tarfile" ]; then
+        dir=$(dirname "$tarfile")
+        tar -xzf "$tarfile" -C "$dir"
+        rm "$tarfile"
+      fi
+    done
+
+  # Git pull latest for each repo
+  - |
+    cd /workspace
+    for dir in */; do
+      if [ -d "${dir}.git" ]; then
+        cd "$dir"
+        git fetch origin
+        git pull origin $(git branch --show-current)
+        cd ..
+      fi
+    done
+
+  # Restore Kilo context
+  - rclone copy r2:bloom-state/kilo/ /root/.kilocode/
+
+  # Start services
+  - systemctl daemon-reload
+  - systemctl enable ttyd bloom-daemon
+  - systemctl start ttyd bloom-daemon
+
+  # Notify ready
+  - |
+    VPS_IP=$(curl -s http://169.254.169.254/hetzner/v1/metadata/public-ipv4)
+    curl -X POST "${WEBHOOK_URL}/webhook/ready" \
+      -H "Authorization: Bearer ${WEBHOOK_SECRET}" \
+      -H "Content-Type: application/json" \
+      -d "{
+        \"serverId\": \"$(curl -s http://169.254.169.254/hetzner/v1/metadata/instance-id)\",
+        \"ip\": \"$VPS_IP\"
+      }"

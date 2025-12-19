@@ -1,5 +1,80 @@
+# Secrets and sensitive files
 secrets.json
+.env
+.env.*
+!.env.example
+
+# Logs
 *.log
-__pycache__/
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build artifacts
+dist/
+build/
+.output/
+.vercel
+.netlify
+
+# SvelteKit
+.svelte-kit/
+packages/dashboard/.svelte-kit/
+packages/dashboard/build/
+
+# Cloudflare Workers
+.wrangler/
+packages/worker/.wrangler/
+packages/worker/dist/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Caches
+.cache/
+.parcel-cache/
+.eslintcache
+.turbo
+
+# OS files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Python (legacy from template)
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+env/
+
+# Local agent files
 .claude/
+
+# Temporary files
+*.tmp
+*.temp
+.baseproject-backup-*/
+
+# Lock files (keep pnpm-lock.yaml but ignore others)
+package-lock.json
+yarn.lock
