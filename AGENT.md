@@ -5,17 +5,41 @@
 ---
 
 ## Project Purpose
-[Fill in: What this project does - 1-2 sentences]
+
+**Grove Bloom** is a personal, serverless remote coding agent infrastructure. It provides a mobile-friendly web interface to an autonomous coding agent (Kilo Code CLI) running on a transient Hetzner VPS. The philosophy is "Text it and forget it" — send a task from your phone, the agent works until done, commits code, and the infrastructure self-destructs.
 
 ## Tech Stack
-[Fill in: Technologies, frameworks, and languages used]
-- Language:
-- Framework:
-- Key Libraries:
-- Package Manager:
+
+- **Language**: TypeScript, JavaScript, Bash
+- **Frontend**: SvelteKit 2+ (Svelte 5 runes), mobile-first design
+- **Orchestrator**: Cloudflare Workers (Hono framework)
+- **Compute**: Hetzner Cloud VPS (transient, CX33 EU / CPX31 US)
+- **Storage**: Cloudflare R2 (repositories, workspace state)
+- **Database**: Cloudflare D1 (sessions, tasks, config)
+- **Agent**: Kilo Code CLI (autonomous mode)
+- **AI Models**: DeepSeek V3.2 (reasoning/code), GLM 4.6V (vision) via OpenRouter
+- **Auth**: Heartwood (GroveAuth OAuth 2.0 + PKCE)
+- **Terminal**: ttyd (web terminal over HTTPS/WebSocket)
+- **Package Manager**: pnpm (monorepo with workspaces)
 
 ## Architecture Notes
-[Fill in: Key architectural decisions, patterns, or structure]
+
+**Monorepo Structure:**
+- `packages/dashboard/` - SvelteKit app deployed to Cloudflare Pages
+- `packages/worker/` - Cloudflare Worker (bloom-control) orchestrating VPS lifecycle
+- `packages/vps-scripts/` - Cloud-init and daemon scripts for Hetzner VPS
+
+**Key Architectural Decisions:**
+1. **No Persistent Storage on VPS**: All state synced to R2 on shutdown, enabling cheap transient compute
+2. **Dual-Model AI**: DeepSeek V3.2 for code ($0.28/$0.42 per 1M tokens), GLM 4.6V for vision when needed
+3. **State Machine Lifecycle**: OFFLINE → PROVISIONING → RUNNING → IDLE → SYNCING → TERMINATING
+4. **Region Toggle**: EU (cheap, ~$0.0085/hr) vs US (fast, ~$0.022/hr) for cost/latency tradeoff
+5. **Auto-Shutdown Triggers**: Idle timeout (2hr default), task completion, or manual stop
+6. **Mobile-First**: Dashboard optimized for phone use (send tasks on the go)
+
+**Cost Target**: <$1.00/month for ~20 hours coding + heavy DeepSeek usage
+
+See `docs/grove-bloom-spec.md` for complete specification and `docs/diagrams.md` for visual architecture.
 
 ---
 
