@@ -1,8 +1,8 @@
 # Grove Bloom Implementation TODOs
 
-> **Status**: Phase 4 Worker Development complete
+> **Status**: Phase 4 & 5 complete (Worker + Dashboard)
 >
-> **Next**: Set up Cloudflare resources (Phase 1) or continue to Phase 5 (Dashboard)
+> **Next**: Set up Cloudflare resources (Phase 1-3) then test end-to-end (Phase 6-7)
 
 ---
 
@@ -146,7 +146,7 @@
 
 ---
 
-## 🎨 Phase 5: Dashboard (SvelteKit)
+## ✅ Phase 5: Dashboard (SvelteKit) (COMPLETE)
 
 **Context**: Build mobile-first UI for session control, terminal view, settings.
 
@@ -154,25 +154,24 @@
 
 ### Core Pages
 
-- [ ] **Main view** (`routes/+page.svelte`): Status polling, start/stop, region toggle, quick task, recent sessions
-- [ ] **Settings view** (`routes/settings/+page.svelte`): Idle timeout, auto-shutdown, region, models, projects
+- [x] **Main view** (`routes/+page.svelte`): Status polling, start/stop, region toggle, quick task, recent sessions
+- [x] **Settings view** (`routes/settings/+page.svelte`): Idle timeout, auto-shutdown, region, models, projects
 
 ### Components (`lib/components/`)
 
-- [ ] **Terminal.svelte**: ttyd iframe embed with mobile controls
-- [ ] **StatusBadge.svelte**: Color-coded state indicators
-- [ ] **SessionHistory.svelte**: Past sessions list with durations/costs
+- [x] **Terminal.svelte**: ttyd iframe embed with mobile controls
+- [x] **StatusBadge.svelte**: Color-coded state indicators
+- [x] **SessionHistory.svelte**: Past sessions list with durations/costs
 
 ### State & API
 
-- [ ] **session.ts** store: Poll status endpoint, reactive state
-- [ ] **config.ts** store: User config persistence
-- [ ] **bloom.ts** API client: Type-safe worker API wrapper
+- [x] **session.svelte.ts** store: Poll status endpoint, reactive state (Svelte 5 runes)
+- [x] **bloom.ts** API client: Type-safe worker API wrapper
 
 ### Auth & Styling
 
 - [ ] Heartwood auth integration or simple password protection
-- [ ] Mobile-first CSS, touch-friendly buttons, dark theme
+- [x] Mobile-first CSS, touch-friendly buttons, dark theme
 
 ---
 
@@ -227,7 +226,8 @@
 - **Phase 2**: ⏳ Pending (Prepare Repos - manual)
 - **Phase 3**: ⏳ Pending (Hetzner Setup - manual)
 - **Phase 4**: ✅ Complete (Worker Development)
-- **Phase 5-8**: ⏳ Not started
+- **Phase 5**: ✅ Complete (Dashboard - SvelteKit)
+- **Phase 6-8**: ⏳ Not started
 
 *Last updated: 2025-12-20*
-*Next session: Complete Phase 1-3 (infrastructure) or continue to Phase 5 (Dashboard)*
+*Next session: Complete Phase 1-3 (infrastructure) then Phase 6-7 (testing)*
