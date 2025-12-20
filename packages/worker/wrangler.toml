@@ -20,6 +20,7 @@ database_id = "" # Fill in after creating D1 database
 
 # Environment Variables (set with wrangler secret put)
 # HETZNER_API_TOKEN
+# HETZNER_SSH_KEY_ID
 # CLOUDFLARE_API_TOKEN
 # CLOUDFLARE_ZONE_ID
 # CLOUDFLARE_ACCOUNT_ID
