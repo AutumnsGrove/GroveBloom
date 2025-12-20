@@ -1,8 +1,8 @@
 # Grove Bloom Implementation TODOs
 
-> **Status**: Scaffolding complete, ready for Phase 1 implementation
+> **Status**: Phase 4 Worker Development complete
 >
-> **Next**: Set up Cloudflare resources (Phase 1)
+> **Next**: Set up Cloudflare resources (Phase 1) or continue to Phase 5 (Dashboard)
 
 ---
 
@@ -107,36 +107,36 @@
 
 ---
 
-## ⚙️ Phase 4: Worker Development
+## ✅ Phase 4: Worker Development (COMPLETE)
 
 **Context**: Implement worker routes for VPS provisioning, R2 sync, session management, webhooks.
 
 **Location**: `packages/worker/src/`
 
-### Infrastructure Routes (`src/routes/api.ts`)
+### Infrastructure Routes (`src/index.ts`)
 
-- [ ] **Implement `POST /api/start`**: Provision VPS, insert session into D1, return status
-- [ ] **Implement `POST /api/stop`**: Trigger sync, delete VPS, update session end
-- [ ] **Implement `GET /api/status`**: Query D1, calculate uptime/costs, return full status
-- [ ] **Implement `POST /api/task`**: Send task to VPS, insert into D1 tasks table
-- [ ] **Implement `GET /api/projects`**: Query D1 repositories table
-- [ ] **Implement `POST /api/sync`**: Trigger manual R2 sync on VPS
-- [ ] **Implement `GET /api/history`**: Query sessions with pagination, return monthly summary
-- [ ] **Implement `POST /api/config`**: Update D1 config table
+- [x] **Implement `POST /api/start`**: Provision VPS, insert session into D1, return status
+- [x] **Implement `POST /api/stop`**: Trigger sync, delete VPS, update session end
+- [x] **Implement `GET /api/status`**: Query D1, calculate uptime/costs, return full status
+- [x] **Implement `POST /api/task`**: Send task to VPS, insert into D1 tasks table
+- [x] **Implement `GET /api/projects`**: Query D1 repositories table
+- [x] **Implement `POST /api/sync`**: Trigger manual R2 sync on VPS
+- [x] **Implement `GET /api/history`**: Query sessions with pagination, return monthly summary
+- [x] **Implement `POST /api/config`**: Update D1 config table
 
-### Webhook Routes (`src/webhooks/`)
+### Webhook Routes (`src/index.ts`)
 
-- [ ] **Implement `POST /webhook/ready`**: Update DNS, set state to RUNNING
-- [ ] **Implement `POST /webhook/heartbeat`**: Update last_heartbeat, last_activity
-- [ ] **Implement `POST /webhook/task-complete`**: Update task status, trigger shutdown if needed
-- [ ] **Implement `POST /webhook/idle-timeout`**: Trigger graceful shutdown
+- [x] **Implement `POST /webhook/ready`**: Update DNS, set state to RUNNING
+- [x] **Implement `POST /webhook/heartbeat`**: Update last_heartbeat, last_activity
+- [x] **Implement `POST /webhook/task-complete`**: Update task status, trigger shutdown if needed
+- [x] **Implement `POST /webhook/idle-timeout`**: Trigger graceful shutdown
 
 ### Services (`src/services/`)
 
-- [ ] **Create `hetzner.ts`**: VPS create/delete/get via Hetzner Cloud API
-- [ ] **Create `r2-sync.ts`**: Upload/download workspace snapshots
-- [ ] **Create `dns.ts`**: Update Cloudflare A record for bloom subdomain
-- [ ] **Create `session.ts`**: D1 session CRUD operations
+- [x] **Create `hetzner.ts`**: VPS create/delete/get via Hetzner Cloud API
+- [x] **Create `vps.ts`**: VPS communication (sync triggers, task submission)
+- [x] **Create `dns.ts`**: Update Cloudflare A record for bloom subdomain
+- [x] **Create `session.ts`**: D1 session CRUD operations
 
 ### Testing
 
@@ -223,7 +223,11 @@
 ## 📊 Progress Summary
 
 - **Phase 0**: ✅ Complete
-- **Phase 1-8**: ⏳ Not started
+- **Phase 1**: ⏳ Pending (Cloudflare Setup - manual)
+- **Phase 2**: ⏳ Pending (Prepare Repos - manual)
+- **Phase 3**: ⏳ Pending (Hetzner Setup - manual)
+- **Phase 4**: ✅ Complete (Worker Development)
+- **Phase 5-8**: ⏳ Not started
 
-*Last updated: 2025-12-19*
-*Next session: Start Phase 1 - Cloudflare Setup*
+*Last updated: 2025-12-20*
+*Next session: Complete Phase 1-3 (infrastructure) or continue to Phase 5 (Dashboard)*
