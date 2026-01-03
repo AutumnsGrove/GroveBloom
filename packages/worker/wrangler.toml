@@ -18,6 +18,11 @@ binding = "DB"
 database_name = "bloom-db"
 database_id = "" # Fill in after creating D1 database
 
+# Cloudflare KV for Rate Limiting (Threshold)
+[[kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "" # Fill in after creating KV namespace: wrangler kv:namespace create RATE_LIMIT
+
 # Environment Variables (set with wrangler secret put)
 # HETZNER_API_TOKEN
 # HETZNER_SSH_KEY_ID

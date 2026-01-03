@@ -1,9 +1,16 @@
 <script lang="ts">
+  /**
+   * Grove Bloom Dashboard - Main Page
+   *
+   * Mobile-first interface for controlling the Bloom coding agent.
+   * Uses Grove Engine's Prism design system with Bloom customizations.
+   */
   import { onMount } from "svelte";
   import { session } from "$lib/stores/session.svelte";
   import StatusBadge from "$lib/components/StatusBadge.svelte";
   import Terminal from "$lib/components/Terminal.svelte";
   import SessionHistory from "$lib/components/SessionHistory.svelte";
+  import { Button } from "@autumnsgrove/groveengine/ui";
   import type { Region } from "$lib/api/types";
 
   let selectedRegion: Region = $state("eu");
@@ -155,7 +162,7 @@
 
   <!-- Task Input -->
   <section class="task-section">
-    <h2>Quick Task</h2>
+    <h2 class="section-title">Quick Task</h2>
     <div class="task-input-group">
       <textarea
         bind:value={taskInput}
@@ -178,7 +185,7 @@
   {#if session.isRunning}
     <section class="terminal-section">
       <div class="section-header">
-        <h2>Terminal</h2>
+        <h2 class="section-title">Terminal</h2>
         <button
           class="btn btn-sm btn-secondary"
           onclick={() => showTerminal = !showTerminal}
@@ -192,7 +199,7 @@
 
   <!-- Session History -->
   <section class="history-section">
-    <h2>Recent Sessions</h2>
+    <h2 class="section-title">Recent Sessions</h2>
     <SessionHistory
       sessions={session.state.history?.sessions || []}
       thisMonth={session.state.history?.thisMonth}
@@ -201,123 +208,87 @@
 </div>
 
 <style>
+  /* Using Tailwind classes for most styles - keeping custom vars for Bloom theme consistency */
   .page {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-lg);
-    padding-bottom: var(--space-xl);
+    @apply flex flex-col gap-6 pb-8;
   }
 
   .status-card {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-lg);
+    @apply flex flex-col gap-6;
   }
 
   .status-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    @apply flex justify-between items-center;
   }
 
   .status-details {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
+    @apply flex flex-col gap-2;
   }
 
   .status-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
+    @apply flex justify-between items-baseline;
   }
 
   .status-label {
-    font-size: 0.875rem;
+    @apply text-sm;
     color: var(--color-text-muted);
   }
 
   .status-value {
-    font-weight: 500;
-    font-variant-numeric: tabular-nums;
+    @apply font-medium tabular-nums;
   }
 
   .status-value.cost {
-    color: var(--color-green);
+    color: var(--color-success);
   }
 
   .status-value.task {
-    font-size: 0.875rem;
-    text-align: right;
-    max-width: 60%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    @apply text-sm text-right max-w-[60%] truncate;
   }
 
   .offline-content {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-lg);
+    @apply flex flex-col gap-6;
   }
 
   .region-section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-sm);
+    @apply flex flex-col items-center gap-2;
   }
 
   .region-rate {
-    font-size: 0.875rem;
+    @apply text-sm;
     color: var(--color-text-muted);
   }
 
   .provisioning-content {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
-    padding: var(--space-lg) 0;
+    @apply flex flex-col gap-2 py-6;
   }
 
   .error-banner {
-    padding: 0.75rem 1rem;
-    background: color-mix(in srgb, var(--color-red) 15%, transparent);
-    border: 1px solid var(--color-red);
-    border-radius: var(--radius-md);
-    color: var(--color-red);
-    font-size: 0.875rem;
+    @apply px-4 py-3 text-sm rounded-grove;
+    background: rgba(248, 113, 113, 0.15);
+    border: 1px solid var(--color-error);
+    color: var(--color-error);
   }
 
-  .task-section h2,
-  .terminal-section h2,
-  .history-section h2 {
-    margin-bottom: var(--space-md);
-    font-size: 0.875rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+  .section-title {
+    @apply mb-4 text-sm uppercase tracking-wide;
     color: var(--color-text-muted);
   }
 
   .task-input-group {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
+    @apply flex flex-col gap-2;
   }
 
   .task-input-group textarea {
-    resize: vertical;
+    @apply resize-y;
     min-height: 60px;
   }
 
   .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--space-md);
+    @apply flex justify-between items-center mb-4;
   }
 
   .section-header h2 {
-    margin-bottom: 0;
+    @apply mb-0;
   }
 </style>

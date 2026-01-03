@@ -13,8 +13,11 @@ import {
   createDnsService,
   createSessionService,
   createVpsService,
+  createSongbirdService,
+  createThresholdService,
   getHourlyRate,
 } from "./services";
+import type { SongbirdService, ThresholdService } from "./services";
 import type {
   StartRequest,
   StopRequest,
@@ -28,6 +31,7 @@ type Bindings = {
   BLOOM_REPOS: R2Bucket;
   BLOOM_STATE: R2Bucket;
   DB: D1Database;
+  RATE_LIMIT: KVNamespace;
   HETZNER_API_TOKEN: string;
   HETZNER_SSH_KEY_ID: string;
   CLOUDFLARE_API_TOKEN: string;
@@ -49,6 +53,8 @@ type Variables = {
   hetznerService: ReturnType<typeof createHetznerService>;
   dnsService: ReturnType<typeof createDnsService>;
   vpsService: ReturnType<typeof createVpsService>;
+  songbird: SongbirdService;
+  threshold: ThresholdService;
 };
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
@@ -68,6 +74,9 @@ app.use("/*", async (c, next) => {
   c.set("hetznerService", createHetznerService(c.env.HETZNER_API_TOKEN));
   c.set("dnsService", createDnsService(c.env.CLOUDFLARE_API_TOKEN, c.env.CLOUDFLARE_ZONE_ID));
   c.set("vpsService", createVpsService());
+  // Security services (Songbird + Threshold)
+  c.set("songbird", createSongbirdService());
+  c.set("threshold", createThresholdService(c.env.RATE_LIMIT || null));
   await next();
 });
 
@@ -106,10 +115,31 @@ app.get("/", (c) => {
 
 /**
  * POST /api/start - Provision a new VPS session
+ *
+ * Protected by:
+ * - Threshold: Rate limiting (2 per hour) + cost protection
  */
 app.post("/api/start", async (c) => {
   const sessionService = c.get("sessionService");
   const hetznerService = c.get("hetznerService");
+  const threshold = c.get("threshold");
+
+  // Rate limiting (Threshold pattern - strict for expensive operations)
+  const identifier = c.req.header("CF-Connecting-IP") ||
+                     c.req.header("X-Forwarded-For")?.split(",")[0] ||
+                     "anonymous";
+  const rateLimit = await threshold.checkRateLimit("api/start", identifier);
+  if (!rateLimit.allowed) {
+    throw new HTTPException(429, { message: rateLimit.message || "Rate limit exceeded" });
+  }
+
+  // Cost protection - estimate minimum 1 hour session (~$0.02)
+  const costCheck = await threshold.checkCostLimit(identifier, 0.02);
+  if (!costCheck.allowed) {
+    throw new HTTPException(402, { message: costCheck.message || "Daily cost limit exceeded" });
+  }
+
+  await threshold.recordRequest("api/start", identifier);
 
   // Check if already running
   const state = await sessionService.getServerState();
@@ -330,10 +360,26 @@ app.get("/api/status", async (c) => {
 
 /**
  * POST /api/task - Send a task to the running agent
+ *
+ * Protected by:
+ * - Threshold: Rate limiting (100 tasks/hour)
+ * - Songbird: Prompt injection detection
  */
 app.post("/api/task", async (c) => {
   const sessionService = c.get("sessionService");
   const vpsService = c.get("vpsService");
+  const songbird = c.get("songbird");
+  const threshold = c.get("threshold");
+
+  // Rate limiting (Threshold pattern)
+  const identifier = c.req.header("CF-Connecting-IP") ||
+                     c.req.header("X-Forwarded-For")?.split(",")[0] ||
+                     "anonymous";
+  const rateLimit = await threshold.checkRateLimit("api/task", identifier);
+  if (!rateLimit.allowed) {
+    throw new HTTPException(429, { message: rateLimit.message || "Rate limit exceeded" });
+  }
+  await threshold.recordRequest("api/task", identifier);
 
   const state = await sessionService.getServerState();
   if (!state || state.state !== "RUNNING") {
@@ -345,19 +391,30 @@ app.post("/api/task", async (c) => {
   }
 
   const body = await c.req.json<TaskRequest>();
+
+  // Input validation (Songbird pattern)
+  const validation = songbird.validateInput(body.task);
+  if (!validation.valid) {
+    throw new HTTPException(400, {
+      message: `Invalid task: ${validation.issues.join(", ")}`,
+    });
+  }
+
+  // Protect task with canary marker
+  const protected_ = songbird.protectTask(body.task);
   const taskId = generateTaskId();
 
-  // Create task record
+  // Create task record (store sanitized version)
   await sessionService.createTask({
     sessionId: state.session_id!,
     taskId,
-    description: body.task,
+    description: protected_.sanitizedTask,
     mode: body.mode,
   });
 
   // Update current task
   await sessionService.updateServerState({
-    current_task: body.task,
+    current_task: protected_.sanitizedTask,
     last_activity: new Date().toISOString(),
   });
 
@@ -366,7 +423,7 @@ app.post("/api/task", async (c) => {
     await vpsService.sendTask(
       state.vps_ip,
       c.env.WEBHOOK_SECRET,
-      body.task,
+      protected_.sanitizedTask,
       body.mode
     );
   } catch (error) {
@@ -387,6 +444,7 @@ app.post("/api/task", async (c) => {
     taskId,
     status: "queued",
     message: "Task sent to agent",
+    warnings: protected_.warnings.length > 0 ? protected_.warnings : undefined,
   });
 });
 
