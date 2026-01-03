@@ -15,3 +15,17 @@ export type { SessionService } from "./session";
 
 export { createVpsService } from "./vps";
 export type { VpsService } from "./vps";
+
+// Security Services (Grove Patterns)
+export { createSongbirdService } from "./songbird";
+export type { SongbirdService, ProtectedTask, ValidationResult, SongbirdConfig } from "./songbird";
+
+export { createThresholdService, createRateLimitMiddleware } from "./threshold";
+export type {
+  ThresholdService,
+  RateLimitConfig,
+  RateLimitResult,
+  CostProtectionResult,
+  AbuseCheckResult,
+  AbuseContext,
+} from "./threshold";
