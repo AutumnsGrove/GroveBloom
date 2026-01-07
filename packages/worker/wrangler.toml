@@ -28,8 +28,6 @@ database_id = "" # Fill in after creating D1 database
 # R2_SECRET_KEY
 # OPENROUTER_API_KEY
 # WEBHOOK_SECRET
-# HEARTWOOD_CLIENT_ID
-# HEARTWOOD_CLIENT_SECRET
 
 [vars]
 WORKER_ENV = "production"

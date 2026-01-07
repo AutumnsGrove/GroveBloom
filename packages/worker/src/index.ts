@@ -37,8 +37,6 @@ type Bindings = {
   R2_SECRET_KEY: string;
   OPENROUTER_API_KEY: string;
   WEBHOOK_SECRET: string;
-  HEARTWOOD_CLIENT_ID: string;
-  HEARTWOOD_CLIENT_SECRET: string;
   WORKER_ENV: string;
   DEFAULT_REGION: string;
   DEFAULT_IDLE_TIMEOUT: string;

@@ -18,7 +18,7 @@
 - **Database**: Cloudflare D1 (sessions, tasks, config)
 - **Agent**: Kilo Code CLI (autonomous mode)
 - **AI Models**: DeepSeek V3.2 (reasoning/code), GLM 4.6V (vision) via OpenRouter
-- **Auth**: Heartwood (GroveAuth OAuth 2.0 + PKCE)
+- **Auth**: Better Auth (session-based, SSO via auth-api.grove.place)
 - **Terminal**: ttyd (web terminal over HTTPS/WebSocket)
 - **Package Manager**: pnpm (monorepo with workspaces)
 
